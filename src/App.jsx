@@ -314,9 +314,9 @@ const GuruDashboard = ({
                   <AnimatePresence>
                     {sortedData.map((item, idx) => (
                       <motion.tr
-                        layout
+                        // HAPUS PROP 'layout' DI SINI
                         variants={fadeUpItem}
-                        key={item[keysMapping.keyNama]}
+                        key={`${item[keysMapping.keyNama]}-${idx}`}
                         whileHover={{
                           backgroundColor: "rgba(238, 242, 255, 0.6)",
                           scale: 0.995,
@@ -519,12 +519,15 @@ export default function App() {
     const { keyNama, keyKelas, keyMapelRaw, keyNilaiRaw } = keysMapping;
     const grouped = {};
     data.forEach((row) => {
-      const nama = row[keyNama];
+      // Perbaikan: Gunakan .trim() agar nama tidak duplikat karena spasi
+      const nama = row[keyNama]?.toString().trim();
+      const kelas = row[keyKelas]?.toString().trim() || "";
+
       if (!nama) return;
       if (!grouped[nama])
         grouped[nama] = {
           [keyNama]: nama,
-          [keyKelas]: row[keyKelas] || "",
+          [keyKelas]: kelas,
           Total: 0,
           Count: 0,
         };
