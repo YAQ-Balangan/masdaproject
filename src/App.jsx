@@ -71,6 +71,7 @@ export default function App() {
     if (!data.length) return [];
     const { keyNama, keyKelas, keyMapelRaw, keyNilaiRaw } = keysMapping;
     const grouped = {};
+
     data.forEach((row) => {
       const nama = row[keyNama]?.toString().trim();
       if (!nama) return;
@@ -81,6 +82,7 @@ export default function App() {
           Total: 0,
           Count: 0,
         };
+
       if (keyMapelRaw && row[keyMapelRaw]) {
         const val = parseFloat(row[keyNilaiRaw]) || 0;
         grouped[nama][row[keyMapelRaw].trim()] = val;
@@ -215,7 +217,7 @@ export default function App() {
             filters={filters}
             setFilters={setFilters}
             isSyncing={isSyncing}
-            // BARU: Menangkap klik nama santri dan memindahkan view
+            // Menangkap klik nama santri dan memindahkan view
             onStudentClick={(namaSantri) => {
               setCurrentUserName(namaSantri);
               setView("guru-santri-view"); // Pergi ke view rahasia milik guru
@@ -230,16 +232,18 @@ export default function App() {
             activeStudent={activeStudent}
             keysMapping={keysMapping}
             allMapel={allMapel}
+            processedData={processedData}
           />
         )}
 
-        {/* BARU: VIEW MILIK GURU KETIKA MELIHAT RAPOR SANTRI */}
+        {/* VIEW MILIK GURU KETIKA MELIHAT RAPOR SANTRI */}
         {view === "guru-santri-view" && activeStudent && (
           <SantriDashboard
             navigateTo={() => setView("guru-dashboard")}
             activeStudent={activeStudent}
             keysMapping={keysMapping}
             allMapel={allMapel}
+            processedData={processedData}
           />
         )}
       </AnimatePresence>
