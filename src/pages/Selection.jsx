@@ -29,8 +29,11 @@ export default function Selection({ navigateTo }) {
           <GraduationCap className="w-12 h-12" />
         </div>
         <h1 className="text-4xl md:text-6xl font-black text-slate-900 mb-4 tracking-tight drop-shadow-sm">
-          Portal <span className="text-emerald-600">Akademik.</span>
+          Ujian <span className="text-emerald-600">Madrasah</span>
         </h1>
+        <h2 className="text-4xl md:text-2xl font-black text-amber-500 mb-4 tracking-tight drop-shadow-sm">
+          ©2026
+        </h2>
         <p className="text-slate-600 font-medium max-w-md mx-auto leading-relaxed">
           Sistem informasi monitoring nilai secara real-time. Silakan pilih
           portal akses Anda.
@@ -59,7 +62,7 @@ export default function Selection({ navigateTo }) {
           </h2>
           <p className="text-slate-500 text-sm font-medium leading-relaxed">
             Masuk sebagai tenaga pendidik untuk memonitor rekapitulasi nilai
-            seluruh santri.
+            seluruh murid.
           </p>
           <div className="mt-8 flex items-center text-emerald-600 font-bold text-sm uppercase tracking-wider group-hover:translate-x-2 transition-transform duration-300">
             Masuk Portal <ChevronRight size={18} className="ml-1" />
@@ -78,14 +81,14 @@ export default function Selection({ navigateTo }) {
             <BookOpen size={28} />
           </div>
           <h2 className="text-2xl font-black mb-3 text-slate-800">
-            Portal Santri
+            Akses Murid
           </h2>
           <p className="text-slate-500 text-sm font-medium leading-relaxed">
-            Akses personal santri untuk melihat rapor evaluasi hasil belajar
+            Akses personal murid untuk melihat rapor evaluasi hasil belajar
             secara mandiri.
           </p>
           <div className="mt-8 flex items-center text-amber-500 font-bold text-sm uppercase tracking-wider group-hover:translate-x-2 transition-transform duration-300">
-            Cari Data <ChevronRight size={18} className="ml-1" />
+            Masuk Portal <ChevronRight size={18} className="ml-1" />
           </div>
         </motion.button>
       </motion.div>

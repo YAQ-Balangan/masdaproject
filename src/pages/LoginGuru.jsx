@@ -30,7 +30,7 @@ export default function LoginGuru({
           <Lock size={32} />
         </div>
         <h2 className="text-3xl font-black text-center text-slate-900 mb-2 tracking-tight">
-          Login Admin
+          Login Guru
         </h2>
         <p className="text-center text-slate-500 text-sm mb-8 font-medium">
           Masukkan kunci akses untuk melanjutkan.
@@ -66,7 +66,7 @@ export default function LoginGuru({
             onClick={handleLoginGuru}
             className="w-full p-4 mt-2 bg-slate-900 hover:bg-slate-800 text-emerald-400 rounded-2xl font-black uppercase tracking-widest text-sm transition-colors shadow-xl shadow-slate-900/20"
           >
-            Otorisasi Akses
+            Masuk
           </motion.button>
         </div>
       </div>

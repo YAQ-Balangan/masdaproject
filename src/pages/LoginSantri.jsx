@@ -13,7 +13,7 @@ export default function LoginSantri({ navigateTo, loginInputSantri, setLoginInpu
                 <div className="w-20 h-20 bg-amber-50 text-amber-500 rounded-[2rem] flex items-center justify-center mx-auto mb-6 mt-4 shadow-inner">
                     <Search size={32} />
                 </div>
-                <h2 className="text-3xl font-black text-center text-slate-900 mb-2 tracking-tight">Cari Data Santri</h2>
+                <h2 className="text-3xl font-black text-center text-slate-900 mb-2 tracking-tight">Cari Data Murid</h2>
                 <p className="text-center text-slate-500 text-sm mb-8 font-medium">Masukkan nama lengkap / sebagian untuk verifikasi.</p>
                 <div className="space-y-4">
                     <input
@@ -36,7 +36,7 @@ export default function LoginSantri({ navigateTo, loginInputSantri, setLoginInpu
                         )}
                     </AnimatePresence>
                     <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleLoginSantri} className="w-full p-4 mt-2 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-2xl font-black uppercase tracking-widest text-sm transition-colors shadow-xl shadow-amber-500/20">
-                        Tampilkan Nilai
+                        Cek Nilai
                     </motion.button>
                 </div>
             </div>

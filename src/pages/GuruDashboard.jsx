@@ -63,7 +63,7 @@ const RaceItem = memo(
         className="flex items-center gap-4 group relative py-1"
       >
         <div
-          title="Klik untuk lihat rapor santri"
+          title="Klik untuk lihat rapor murid"
           onClick={() =>
             onStudentClick && onStudentClick(item[keysMapping.keyNama])
           }
@@ -225,7 +225,7 @@ export default function GuruDashboard({
     }
 
     if (type === "xls") {
-      const headers = ["No", "Nama Santri", "Kelas", ...displayedCols];
+      const headers = ["No", "Nama Murid", "Kelas", ...displayedCols];
       const dataRows = sortedData.map((item, idx) => [
         idx + 1,
         item[keysMapping.keyNama],
@@ -250,12 +250,7 @@ export default function GuruDashboard({
 
     if (type === "doc") {
       try {
-        const headerCells = [
-          "No",
-          "Nama Santri",
-          "Kelas",
-          ...displayedCols,
-        ].map(
+        const headerCells = ["No", "Nama Murid", "Kelas", ...displayedCols].map(
           (text) =>
             new TableCell({
               children: [
@@ -401,7 +396,7 @@ export default function GuruDashboard({
           </div>
           <div>
             <h2 className="text-xl font-black text-slate-800 drop-shadow-sm">
-              Monitoring Nilai
+              Monitoring Nilai (Real-Time)
             </h2>
             <p
               className={`text-[10px] font-black uppercase tracking-widest ${isSyncing ? "text-amber-600 animate-pulse" : "text-emerald-700"}`}
@@ -444,11 +439,11 @@ export default function GuruDashboard({
                 Eksplorasi Lembar Nilai
               </strong>
               Mari jelajahi rekapitulasi data secara menyeluruh. Anda dapat
-              menggunakan penyaringan <b>Kelas</b> dan <b>Mata Pelajaran</b> di
-              bawah untuk menyusun data secara spesifik sebelum melakukan cetak
+              menggunakan filter <b>Kelas</b> dan <b>Mata Pelajaran</b> di bawah
+              untuk menyusun data secara spesifik sebelum melakukan cetak
               dokumen.{" "}
               <span className="text-emerald-600 font-bold">
-                Klik pada nama santri di tabel untuk membuka laporan nilainya
+                Klik pada nama murid di tabel untuk membuka laporan nilainya
                 secara rinci.
               </span>
             </p>
@@ -459,7 +454,7 @@ export default function GuruDashboard({
                 Papan Peringkat Akademik
               </strong>
               Selamat datang di pusat statistik kelas! Di sini Anda dapat
-              meninjau pencapaian 10 peringkat teratas santri. Silakan urutkan
+              meninjau pencapaian 10 peringkat teratas murid. Silakan urutkan
               berdasarkan <b>Rata-rata Keseluruhan</b> atau spesifik per{" "}
               <b>Mata Pelajaran</b> untuk menganalisis performa terbaik mereka.
             </p>
@@ -513,7 +508,7 @@ export default function GuruDashboard({
           />
           <input
             type="text"
-            placeholder="Cari Nama Santri..."
+            placeholder="Cari Nama Murid..."
             className="w-full pl-11 pr-4 py-4 rounded-2xl bg-white border border-slate-100 shadow-sm text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
@@ -621,7 +616,7 @@ export default function GuruDashboard({
                       No
                     </th>
                     <th className="px-2 py-4 sticky left-[2.5rem] md:left-[3rem] bg-slate-900 z-10 w-[10rem] min-w-[10rem] md:w-[15rem] md:min-w-[15rem] print:static print:bg-transparent">
-                      Nama Santri
+                      Nama Murid
                     </th>
                     <th className="px-2 py-4 text-center sticky left-[12.5rem] md:left-[18rem] bg-slate-900 z-10 w-[4.5rem] min-w-[4.5rem] md:w-[5.5rem] md:min-w-[5.5rem] print:static print:bg-transparent">
                       Kelas
@@ -649,7 +644,7 @@ export default function GuruDashboard({
                       </td>
 
                       <td
-                        title="Klik untuk lihat rapor santri"
+                        title="Klik untuk lihat rapor murid"
                         onClick={() =>
                           onStudentClick &&
                           onStudentClick(item[keysMapping.keyNama])
@@ -704,7 +699,7 @@ export default function GuruDashboard({
               <motion.div
                 key={idx}
                 variants={fadeUp}
-                title="Klik untuk lihat rapor santri"
+                title="Klik untuk lihat rapor murid"
                 onClick={() =>
                   onStudentClick && onStudentClick(item[keysMapping.keyNama])
                 }
