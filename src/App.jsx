@@ -215,12 +215,28 @@ export default function App() {
             filters={filters}
             setFilters={setFilters}
             isSyncing={isSyncing}
+            // BARU: Menangkap klik nama santri dan memindahkan view
+            onStudentClick={(namaSantri) => {
+              setCurrentUserName(namaSantri);
+              setView("guru-santri-view"); // Pergi ke view rahasia milik guru
+            }}
           />
         )}
 
+        {/* VIEW MILIK SANTRI (Klik 'Back' akan kembali ke halaman awal / logout) */}
         {view === "santri-dashboard" && activeStudent && (
           <SantriDashboard
             navigateTo={navigateTo}
+            activeStudent={activeStudent}
+            keysMapping={keysMapping}
+            allMapel={allMapel}
+          />
+        )}
+
+        {/* BARU: VIEW MILIK GURU KETIKA MELIHAT RAPOR SANTRI */}
+        {view === "guru-santri-view" && activeStudent && (
+          <SantriDashboard
+            navigateTo={() => setView("guru-dashboard")}
             activeStudent={activeStudent}
             keysMapping={keysMapping}
             allMapel={allMapel}
