@@ -487,7 +487,7 @@ export default function GuruDashboard({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => handleExport("doc")}
-                className="flex items-center gap-1.5 px-4 py-2 bg-[#2b579a]-500 hover:bg-[#2b579a]-600 text-white text-[10px] font-bold uppercase rounded-xl transition-colors shadow-sm"
+                className="flex items-center gap-1.5 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white text-[10px] font-bold uppercase rounded-xl transition-colors shadow-sm"
               >
                 <Download size={14} /> DOCX
               </motion.button>
