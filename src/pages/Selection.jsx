@@ -106,7 +106,7 @@ export default function Selection({ navigateTo }) {
           Ujian <span className="text-emerald-600">Madrasah</span>{" "}
           <span className="text-amber-500">2026</span>
         </h1>
-        <h2 className="text-4xl md:text-3xl font-black text-slate-500 mb-4 tracking-tight drop-shadow-sm">
+        <h2 className="text-2xl md:text-4xl font-black text-slate-500 mb-4 tracking-tight drop-shadow-sm">
           MA Darussalam Awayan
         </h2>
         <p className="text-slate-600 font-medium max-w-md mx-auto leading-relaxed bg-white/40 px-4 py-2 rounded-2xl backdrop-blur-sm border border-white/50">
@@ -168,20 +168,6 @@ export default function Selection({ navigateTo }) {
             Masuk Portal <ChevronRight size={18} className="ml-1" />
           </div>
         </motion.button>
-      </motion.div>
-
-      {/* FOOTER / CREDIT SECTION */}
-      <motion.div
-        variants={fadeUp}
-        initial="hidden"
-        animate="visible"
-        className="absolute bottom-6 w-full text-center z-10 px-4"
-      >
-        <p className="text-[11px] md:text-xs font-semibold text-slate-500/80 tracking-wide drop-shadow-sm">
-          &copy; {new Date().getFullYear()} Hak Cipta Dilindungi. Dirancang &
-          Dikembangkan oleh{" "}
-          <span className="text-emerald-600 font-black">Ahmad Maulana</span>.
-        </p>
       </motion.div>
     </motion.div>
   );
