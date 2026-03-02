@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
@@ -18,12 +17,14 @@ export default function App() {
   const [view, setView] = useState("selection");
   const [currentUserName, setCurrentUserName] = useState(null);
   const [guruMode, setGuruMode] = useState("table");
+
   const [filters, setFilters] = useState({
     search: "",
     kelas: "",
     mapelTable: "",
     mapelStats: "",
   });
+
   const [loginInputGuru, setLoginInputGuru] = useState("");
   const [loginInputSantri, setLoginInputSantri] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -32,6 +33,7 @@ export default function App() {
     if (isSyncing) return;
     if (isInitial) setLoading(true);
     else setIsSyncing(true);
+
     try {
       const response = await fetch(API_URL);
       const result = await response.json();
@@ -53,6 +55,7 @@ export default function App() {
   const keysMapping = useMemo(() => {
     if (!data.length) return { keyNama: "Nama", keyKelas: "Kelas" };
     const keys = Object.keys(data[0]);
+
     return {
       keyNama: keys.find((k) => k.toLowerCase().includes("nama")) || "Nama",
       keyKelas: keys.find((k) => k.toLowerCase().includes("kelas")) || "Kelas",
@@ -75,6 +78,7 @@ export default function App() {
     data.forEach((row) => {
       const nama = row[keyNama]?.toString().trim();
       if (!nama) return;
+
       if (!grouped[nama])
         grouped[nama] = {
           [keyNama]: nama,
@@ -102,6 +106,7 @@ export default function App() {
         });
       }
     });
+
     return Object.values(grouped).map((s) => ({
       ...s,
       RataRata: s.Count ? (s.Total / s.Count).toFixed(1) : 0,
@@ -149,19 +154,25 @@ export default function App() {
 
   const handleLoginSantri = () => {
     if (!loginInputSantri.trim()) {
-      setLoginError("Silakan masukkan nama Anda.");
+      setLoginError("Silakan masukkan nama lengkap Anda.");
       return;
     }
-    const f = processedData.find((s) =>
-      s[keysMapping.keyNama]
-        .toLowerCase()
-        .includes(loginInputSantri.toLowerCase()),
+
+    // Menggunakan Exact Match (===) bukan .includes()
+    const searchName = loginInputSantri.trim().toLowerCase();
+
+    const f = processedData.find(
+      (s) =>
+        s[keysMapping.keyNama].toString().trim().toLowerCase() === searchName,
     );
+
     if (f) {
       setCurrentUserName(f[keysMapping.keyNama]);
       navigateTo("santri-dashboard");
     } else {
-      setLoginError("Data santri tidak ditemukan. Periksa ejaan nama.");
+      setLoginError(
+        "Data santri tidak ditemukan. Pastikan nama diketik lengkap sesuai data.",
+      );
     }
   };
 
@@ -217,15 +228,13 @@ export default function App() {
             filters={filters}
             setFilters={setFilters}
             isSyncing={isSyncing}
-            // Menangkap klik nama santri dan memindahkan view
             onStudentClick={(namaSantri) => {
               setCurrentUserName(namaSantri);
-              setView("guru-santri-view"); // Pergi ke view rahasia milik guru
+              setView("guru-santri-view");
             }}
           />
         )}
 
-        {/* VIEW MILIK SANTRI (Klik 'Back' akan kembali ke halaman awal / logout) */}
         {view === "santri-dashboard" && activeStudent && (
           <SantriDashboard
             navigateTo={navigateTo}
@@ -236,7 +245,6 @@ export default function App() {
           />
         )}
 
-        {/* VIEW MILIK GURU KETIKA MELIHAT RAPOR SANTRI */}
         {view === "guru-santri-view" && activeStudent && (
           <SantriDashboard
             navigateTo={() => setView("guru-dashboard")}
