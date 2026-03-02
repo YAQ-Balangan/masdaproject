@@ -31,18 +31,19 @@ export default function LoginSantri({
         </div>
 
         <h2 className="text-3xl font-black text-center text-slate-900 mb-2 tracking-tight">
-          Cari Data Murid
+          Login Murid
         </h2>
 
-        {/* Teks instruksi diubah untuk mempertegas penggunaan nama lengkap */}
+        {/* Teks diubah agar sesuai dengan penggunaan Nomor Peserta */}
         <p className="text-center text-slate-500 text-sm mb-8 font-medium">
-          Masukkan nama lengkap Anda sesuai data untuk verifikasi.
+          Masukkan Nomor Peserta Ujian Anda untuk melihat data.
         </p>
 
         <div className="space-y-4">
           <input
+            // type text tetap dipertahankan jaga-jaga kalau nomor pesertanya ada hurufnya misal "NIS-123"
             type="text"
-            placeholder="Contoh: Ahmad Maulana (Harus Lengkap)"
+            placeholder="Contoh: 12-34-56-7-0008-0009"
             autoFocus
             value={loginInputSantri}
             onChange={(e) => {

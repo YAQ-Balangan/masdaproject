@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { API_URL, GURU_PASSWORD, DAFTAR_MAPEL_PASTI } from "./config/constants";
 
-// Mengimpor halaman yang sudah dipisah
 import Selection from "./pages/Selection";
 import LoginGuru from "./pages/LoginGuru";
 import LoginSantri from "./pages/LoginSantri";
@@ -26,6 +25,7 @@ export default function App() {
   });
 
   const [loginInputGuru, setLoginInputGuru] = useState("");
+  // loginInputSantri sekarang akan menyimpan Nomor Peserta
   const [loginInputSantri, setLoginInputSantri] = useState("");
   const [loginError, setLoginError] = useState("");
 
@@ -53,12 +53,25 @@ export default function App() {
   }, []);
 
   const keysMapping = useMemo(() => {
-    if (!data.length) return { keyNama: "Nama", keyKelas: "Kelas" };
+    if (!data.length)
+      return {
+        keyNama: "Nama",
+        keyKelas: "Kelas",
+        keyNoPeserta: "Nomor Peserta",
+      };
     const keys = Object.keys(data[0]);
 
     return {
       keyNama: keys.find((k) => k.toLowerCase().includes("nama")) || "Nama",
       keyKelas: keys.find((k) => k.toLowerCase().includes("kelas")) || "Kelas",
+      // Menambahkan pencarian untuk kolom Nomor Peserta
+      keyNoPeserta:
+        keys.find(
+          (k) =>
+            k.toLowerCase().includes("nomor") ||
+            k.toLowerCase().includes("no peserta") ||
+            k.toLowerCase() === "nis",
+        ) || "Nomor Peserta",
       keyMapelRaw: keys.find(
         (k) =>
           k.toLowerCase() === "mapel" ||
@@ -72,7 +85,8 @@ export default function App() {
 
   const processedData = useMemo(() => {
     if (!data.length) return [];
-    const { keyNama, keyKelas, keyMapelRaw, keyNilaiRaw } = keysMapping;
+    const { keyNama, keyKelas, keyNoPeserta, keyMapelRaw, keyNilaiRaw } =
+      keysMapping;
     const grouped = {};
 
     data.forEach((row) => {
@@ -83,6 +97,8 @@ export default function App() {
         grouped[nama] = {
           [keyNama]: nama,
           [keyKelas]: row[keyKelas] || "",
+          // Menyimpan data Nomor Peserta dari sheet ke dalam processedData
+          [keyNoPeserta]: row[keyNoPeserta]?.toString().trim() || "",
           Total: 0,
           Count: 0,
         };
@@ -95,7 +111,7 @@ export default function App() {
       } else {
         Object.keys(row).forEach((k) => {
           if (
-            ![keyNama, keyKelas, "Total", "Count"].includes(k) &&
+            ![keyNama, keyKelas, keyNoPeserta, "Total", "Count"].includes(k) &&
             row[k] !== ""
           ) {
             const val = parseFloat(row[k]) || 0;
@@ -121,6 +137,7 @@ export default function App() {
           ![
             keysMapping.keyNama,
             keysMapping.keyKelas,
+            keysMapping.keyNoPeserta,
             "Total",
             "Count",
             "RataRata",
@@ -154,25 +171,26 @@ export default function App() {
 
   const handleLoginSantri = () => {
     if (!loginInputSantri.trim()) {
-      setLoginError("Silakan masukkan nama lengkap Anda.");
+      setLoginError("Silakan masukkan Nomor Peserta Anda.");
       return;
     }
 
-    // Menggunakan Exact Match (===) bukan .includes()
-    const searchName = loginInputSantri.trim().toLowerCase();
+    const searchNoPeserta = loginInputSantri.trim();
 
-    const f = processedData.find(
-      (s) =>
-        s[keysMapping.keyNama].toString().trim().toLowerCase() === searchName,
-    );
+    // Pencarian berdasarkan Nomor Peserta
+    const f = processedData.find((s) => {
+      const noPesertaData = s[keysMapping.keyNoPeserta];
+      // Syarat: Nomor peserta di database TIDAK BOLEH KOSONG dan HARUS SAMA dengan input
+      return (
+        noPesertaData && noPesertaData.toString().trim() === searchNoPeserta
+      );
+    });
 
     if (f) {
-      setCurrentUserName(f[keysMapping.keyNama]);
+      setCurrentUserName(f[keysMapping.keyNama]); // Tetap gunakan nama untuk identifikasi internal/dashboard
       navigateTo("santri-dashboard");
     } else {
-      setLoginError(
-        "Data santri tidak ditemukan. Pastikan nama diketik lengkap sesuai data.",
-      );
+      setLoginError("Nomor Peserta tidak ditemukan, pastikan sama persis.");
     }
   };
 
