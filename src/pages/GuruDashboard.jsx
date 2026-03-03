@@ -612,8 +612,8 @@ export default function GuruDashboard({
           onChange={(e) => setFilters({ ...filters, kelas: e.target.value })}
         >
           <option value="">Semua Kelas</option>
-          <option value="MIPA">Grup: Kelas MIPA</option>
-          <option value="IPS">Grup: Kelas IPS</option>
+          <option value="MIPA">Kelas MIPA</option>
+          <option value="IPS">Kelas IPS</option>
           <option disabled>- - - - - -</option>
           {[...new Set(processedData.map((i) => i[keysMapping.keyKelas]))]
             .sort()
