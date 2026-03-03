@@ -174,13 +174,26 @@ export default function GuruDashboard({
   const [tableSort, setTableSort] = useState("Kelas");
 
   const sortedData = useMemo(() => {
-    let f = processedData.filter(
-      (i) =>
-        (filters.kelas ? i[keysMapping.keyKelas] === filters.kelas : true) &&
-        i[keysMapping.keyNama]
-          .toLowerCase()
-          .includes(filters.search.toLowerCase()),
-    );
+    let f = processedData.filter((i) => {
+      const classStr = String(i[keysMapping.keyKelas]).toUpperCase();
+      let matchKelas = true; // Logika baru: Cek apakah filter kelas aktif
+
+      if (filters.kelas) {
+        if (filters.kelas === "MIPA") {
+          matchKelas = classStr.includes("MIPA") || classStr.includes("IPA");
+        } else if (filters.kelas === "IPS") {
+          matchKelas = classStr.includes("IPS");
+        } else {
+          matchKelas = i[keysMapping.keyKelas] === filters.kelas;
+        }
+      }
+
+      const matchSearch = i[keysMapping.keyNama]
+        .toLowerCase()
+        .includes(filters.search.toLowerCase());
+
+      return matchKelas && matchSearch;
+    });
 
     if (guruMode === "stats" || guruMode === "race") {
       const sortKey = filters.mapelStats || "RataRata";
@@ -533,6 +546,9 @@ export default function GuruDashboard({
           onChange={(e) => setFilters({ ...filters, kelas: e.target.value })}
         >
           <option value="">Semua Kelas</option>
+          <option value="MIPA">Kelas MIPA</option>
+          <option value="IPS">Kelas IPS</option>
+          <option disabled>- - - - - -</option>
           {[...new Set(processedData.map((i) => i[keysMapping.keyKelas]))]
             .sort()
             .map((c) => (
