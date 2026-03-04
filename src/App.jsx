@@ -10,11 +10,17 @@ import GuruDashboard from "./pages/GuruDashboard";
 import SantriDashboard from "./pages/SantriDashboard";
 
 export default function App() {
+  // 1. MEMBACA MEMORI LOKAL SAAT WEB PERTAMA KALI DIBUKA
+  const initialView = localStorage.getItem("app_view") || "selection";
+  const initialUserName = localStorage.getItem("app_userName") || null;
+
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [view, setView] = useState("selection");
-  const [currentUserName, setCurrentUserName] = useState(null);
+
+  // Menggunakan memori lokal sebagai posisi awal (bukan selalu dari "selection")
+  const [view, setView] = useState(initialView);
+  const [currentUserName, setCurrentUserName] = useState(initialUserName);
   const [guruMode, setGuruMode] = useState("table");
 
   const [filters, setFilters] = useState({
@@ -29,9 +35,42 @@ export default function App() {
   const [loginInputSantri, setLoginInputSantri] = useState("");
   const [loginError, setLoginError] = useState("");
 
+  // --- SISTEM 1: AUTO-SAVE KE MEMORI LOKAL ---
+  // Setiap kali halaman (view) atau nama murid berubah, otomatis simpan ke brankas browser
+  useEffect(() => {
+    localStorage.setItem("app_view", view);
+    if (currentUserName) {
+      localStorage.setItem("app_userName", currentUserName);
+    } else {
+      localStorage.removeItem("app_userName");
+    }
+  }, [view, currentUserName]);
+  // -------------------------------------------
+
+  // --- SISTEM 2: PENANGKAL SWIPE BACK KELUAR APLIKASI ---
+  useEffect(() => {
+    // Daftarkan posisi saat ini ke riwayat HP saat web baru dimuat
+    window.history.replaceState(
+      { view: initialView, userName: initialUserName },
+      "",
+    );
+
+    // Dengarkan saat user melakukan "Swipe Back" atau "Tombol Kembali" di HP
+    const handlePopState = (event) => {
+      if (event.state) {
+        setView(event.state.view);
+        setCurrentUserName(event.state.userName || null);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+  // ------------------------------------------------------
+
   const fetchData = async (isInitial = false) => {
     if (isSyncing) return;
-    if (isInitial) setLoading(true);
+    if (isInitial && data.length === 0) setLoading(true);
     else setIsSyncing(true);
 
     try {
@@ -157,15 +196,27 @@ export default function App() {
     [processedData, currentUserName, keysMapping],
   );
 
-  const navigateTo = (newView) => {
+  // --- FUNGSI NAVIGASI YANG DIPERBARUI ---
+  // Fungsi ini sekarang sekaligus menancapkan jejak ke dalam sistem browser
+  const navigateTo = (newView, newUserName = currentUserName) => {
     setView(newView);
+
+    // Pastikan username diperbarui jika dikirim
+    if (newUserName !== currentUserName) {
+      setCurrentUserName(newUserName);
+    }
+
     setLoginInputGuru("");
     setLoginInputSantri("");
     setLoginError("");
+
+    // Tambahkan jejak baru ke browser history agar fitur swipe back aktif
+    window.history.pushState({ view: newView, userName: newUserName }, "");
   };
+  // ---------------------------------------
 
   const handleLoginGuru = () => {
-    if (loginInputGuru === GURU_PASSWORD) navigateTo("guru-dashboard");
+    if (loginInputGuru === GURU_PASSWORD) navigateTo("guru-dashboard", null);
     else setLoginError("Password yang Anda masukkan salah.");
   };
 
@@ -180,15 +231,14 @@ export default function App() {
     // Pencarian berdasarkan Nomor Peserta
     const f = processedData.find((s) => {
       const noPesertaData = s[keysMapping.keyNoPeserta];
-      // Syarat: Nomor peserta di database TIDAK BOLEH KOSONG dan HARUS SAMA dengan input
       return (
         noPesertaData && noPesertaData.toString().trim() === searchNoPeserta
       );
     });
 
     if (f) {
-      setCurrentUserName(f[keysMapping.keyNama]); // Tetap gunakan nama untuk identifikasi internal/dashboard
-      navigateTo("santri-dashboard");
+      // Buka dashboard santri sekaligus masukkan nama santrinya ke sistem
+      navigateTo("santri-dashboard", f[keysMapping.keyNama]);
     } else {
       setLoginError("Nomor Peserta tidak ditemukan, pastikan sama persis.");
     }
@@ -211,11 +261,13 @@ export default function App() {
       )}
 
       <AnimatePresence mode="wait">
-        {view === "selection" && <Selection navigateTo={navigateTo} />}
+        {view === "selection" && (
+          <Selection navigateTo={(v) => navigateTo(v, null)} />
+        )}
 
         {view === "login-guru" && (
           <LoginGuru
-            navigateTo={navigateTo}
+            navigateTo={() => navigateTo("selection", null)}
             loginInputGuru={loginInputGuru}
             setLoginInputGuru={setLoginInputGuru}
             loginError={loginError}
@@ -226,7 +278,7 @@ export default function App() {
 
         {view === "login-santri" && (
           <LoginSantri
-            navigateTo={navigateTo}
+            navigateTo={() => navigateTo("selection", null)}
             loginInputSantri={loginInputSantri}
             setLoginInputSantri={setLoginInputSantri}
             loginError={loginError}
@@ -240,22 +292,23 @@ export default function App() {
             processedData={processedData}
             keysMapping={keysMapping}
             allMapel={allMapel}
-            handleLogout={() => navigateTo("selection")}
+            handleLogout={() => navigateTo("selection", null)}
             guruMode={guruMode}
             setGuruMode={setGuruMode}
             filters={filters}
             setFilters={setFilters}
             isSyncing={isSyncing}
             onStudentClick={(namaSantri) => {
-              setCurrentUserName(namaSantri);
-              setView("guru-santri-view");
+              // Saat guru klik nama murid, otomatis pindah ke tampilan rapor murid
+              navigateTo("guru-santri-view", namaSantri);
             }}
           />
         )}
 
+        {/* TAMPILAN JIKA SANTRI YANG LOGIN */}
         {view === "santri-dashboard" && activeStudent && (
           <SantriDashboard
-            navigateTo={navigateTo}
+            navigateTo={() => navigateTo("selection", null)} // Tombol back keluar
             activeStudent={activeStudent}
             keysMapping={keysMapping}
             allMapel={allMapel}
@@ -263,9 +316,10 @@ export default function App() {
           />
         )}
 
+        {/* TAMPILAN JIKA GURU YANG MEMBUKA RAPOR SANTRI */}
         {view === "guru-santri-view" && activeStudent && (
           <SantriDashboard
-            navigateTo={() => setView("guru-dashboard")}
+            navigateTo={() => navigateTo("guru-dashboard", null)} // Tombol back kembali ke tabel guru
             activeStudent={activeStudent}
             keysMapping={keysMapping}
             allMapel={allMapel}
