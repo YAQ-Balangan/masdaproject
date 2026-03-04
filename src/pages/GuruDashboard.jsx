@@ -1,5 +1,5 @@
 // src/pages/GuruDashboard.jsx
-import React, { useState, useMemo, memo } from "react";
+import React, { useState, useMemo, memo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen,
@@ -12,10 +12,13 @@ import {
   AlertTriangle,
   TrendingUp,
   TrendingDown,
+  ChevronDown,
+  CheckSquare,
+  Square,
+  X,
 } from "lucide-react";
 import { fadeUp, staggerContainer } from "../config/constants";
 
-// IMPORT LIBRARY BARU UNTUK XLSX & DOCX MURNI
 import * as XLSX from "xlsx";
 import {
   Document,
@@ -31,7 +34,6 @@ import {
 } from "docx";
 import { saveAs } from "file-saver";
 
-// KONFIGURASI KKM
 const KKM_SCORE = 75;
 
 const RollingValue = memo(({ value, className, isKkmFailed }) => (
@@ -54,7 +56,6 @@ const RollingValue = memo(({ value, className, isKkmFailed }) => (
   </div>
 ));
 
-// --- KOMPONEN RACE ITEM ---
 const RaceItem = memo(
   ({ item, idx, selectedMapel, keysMapping, onStudentClick }) => {
     const rawVal = item[selectedMapel];
@@ -69,7 +70,7 @@ const RaceItem = memo(
 
     return (
       <motion.div
-        layout // MENGAKTIFKAN ANIMASI POSISI DINAMIS
+        layout
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, scale: 0.9 }}
@@ -143,7 +144,6 @@ const RaceItem = memo(
   },
 );
 
-// --- KOMPONEN RACE VIEW ---
 const RaceView = ({
   sortedData,
   selectedMapel,
@@ -195,13 +195,24 @@ export default function GuruDashboard({
   const [showRemedial, setShowRemedial] = useState(false);
   const [statsOrder, setStatsOrder] = useState("top");
 
-  // --- PRE-PROCESSING: MERGE DATA & SUSUN KOLOM MAPEL ---
+  // State untuk Dropdown Multi-Select
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Tutup dropdown jika klik di luar
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const { mergedData, baseMergedMapel } = useMemo(() => {
-    // 1. Gabungkan datanya ke satu kolom untuk setiap murid
     const newData = processedData.map((item) => {
       const newItem = { ...item };
-
-      // LOGIKA MERGE: BAHASA INDONESIA
       const valBindoIpa =
         newItem["Bahasa Indonesia (IPA)"] || newItem["Bahasa Indonesia (MIPA)"];
       if (
@@ -215,7 +226,6 @@ export default function GuruDashboard({
       delete newItem["Bahasa Indonesia (IPA)"];
       delete newItem["Bahasa Indonesia (MIPA)"];
 
-      // LOGIKA MERGE: EKONOMI
       const valEkoIpa = newItem["Ekonomi (IPA)"] || newItem["Ekonomi (MIPA)"];
       const valEkoIps = newItem["Ekonomi (IPS)"];
       const valEkoMerged = valEkoIpa || valEkoIps || newItem["Ekonomi"];
@@ -235,16 +245,13 @@ export default function GuruDashboard({
       return newItem;
     });
 
-    // 2. Susun daftar kolom dasar (gabungan)
     const newMapel = [];
     allMapel.forEach((m) => {
-      // Daftarkan B.Indo versi merge
       if (m === "Bahasa Indonesia (IPA)" || m === "Bahasa Indonesia (MIPA)") {
         if (!newMapel.includes("Bahasa Indonesia"))
           newMapel.push("Bahasa Indonesia");
         return;
       }
-      // Daftarkan Ekonomi versi merge
       if (
         m === "Ekonomi (IPA)" ||
         m === "Ekonomi (MIPA)" ||
@@ -253,16 +260,14 @@ export default function GuruDashboard({
         if (!newMapel.includes("Ekonomi")) newMapel.push("Ekonomi");
         return;
       }
-      // Sisanya biarkan lewat
       if (!newMapel.includes(m)) newMapel.push(m);
     });
 
     return { mergedData: newData, baseMergedMapel: newMapel };
   }, [processedData, allMapel]);
 
-  // --- FILTERING KOLOM DINAMIS (BERDASARKAN FILTER KELAS) ---
   const dynamicMergedAllMapel = useMemo(() => {
-    if (!filters.kelas) return baseMergedMapel; // Jika "Semua Kelas", tampilkan semua kolom
+    if (!filters.kelas) return baseMergedMapel;
 
     const filterStr = String(filters.kelas).toUpperCase();
     const isMipaView = filterStr.includes("MIPA") || filterStr.includes("IPA");
@@ -270,37 +275,52 @@ export default function GuruDashboard({
 
     return baseMergedMapel.filter((m) => {
       const mUpper = m.toUpperCase();
-      // Jika memfilter kelas MIPA, sembunyikan kolom (IPS)
       if (isMipaView && mUpper.includes("(IPS)")) return false;
-      // Jika memfilter kelas IPS, sembunyikan kolom (MIPA/IPA)
       if (isIpsView && (mUpper.includes("(MIPA)") || mUpper.includes("(IPA)")))
         return false;
       return true;
     });
   }, [baseMergedMapel, filters.kelas]);
-  // ------------------------------------------------------------
 
-  // Gunakan daftar mapel yang sudah dinamis menyesuaikan filter kelas
-  const displayedCols = filters.mapelTable
-    ? [filters.mapelTable]
-    : dynamicMergedAllMapel;
+  // --- LOGIKA MULTI-SELECT MAPEL UNTUK TABEL ---
+  // Pastikan filters.mapelTable selalu berupa array di mode tabel
+  const selectedMapelsArray = Array.isArray(filters.mapelTable)
+    ? filters.mapelTable
+    : filters.mapelTable
+      ? [filters.mapelTable]
+      : [];
+
+  const displayedCols =
+    selectedMapelsArray.length > 0
+      ? dynamicMergedAllMapel.filter((m) => selectedMapelsArray.includes(m))
+      : dynamicMergedAllMapel;
+
   const isFewCols = displayedCols.length <= 2;
 
-  // LOGIKA SORTING & FILTERING UTAMA
+  const toggleMapelSelection = (mapel) => {
+    let updatedSelection = [...selectedMapelsArray];
+    if (updatedSelection.includes(mapel)) {
+      updatedSelection = updatedSelection.filter((m) => m !== mapel);
+    } else {
+      updatedSelection.push(mapel);
+    }
+    setFilters({ ...filters, mapelTable: updatedSelection });
+  };
+
+  const selectAllMapel = () => {
+    setFilters({ ...filters, mapelTable: [] }); // Array kosong = Semua Mapel
+  };
+  // ----------------------------------------------
+
   const sortedData = useMemo(() => {
     let f = mergedData.filter((i) => {
-      // 1. FILTER BLOKIR NAMA TERTENTU
       const namaMurid = String(i[keysMapping.keyNama] || "")
         .trim()
         .toLowerCase();
-      if (namaMurid.includes("muhammad jailani")) {
-        return false; // Skip / Blokir dari dashboard
-      }
+      if (namaMurid.includes("muhammad jailani")) return false;
 
-      // 2. FILTER KELAS / JURUSAN
       const classStr = String(i[keysMapping.keyKelas]).toUpperCase();
       let matchKelas = true;
-
       if (filters.kelas) {
         if (filters.kelas === "MIPA") {
           matchKelas = classStr.includes("MIPA") || classStr.includes("IPA");
@@ -311,10 +331,8 @@ export default function GuruDashboard({
         }
       }
 
-      // 3. FILTER PENCARIAN
       const matchSearch = namaMurid.includes(filters.search.toLowerCase());
 
-      // 4. FILTER REMEDIAL
       let matchRemedial = true;
       if (showRemedial) {
         matchRemedial = displayedCols.some((m) => {
@@ -326,7 +344,6 @@ export default function GuruDashboard({
       return matchKelas && matchSearch && matchRemedial;
     });
 
-    // URUTKAN BERDASARKAN MODE
     if (guruMode === "stats" || guruMode === "race") {
       const sortKey = filters.mapelStats || "RataRata";
       return f.sort((a, b) => {
@@ -518,7 +535,6 @@ export default function GuruDashboard({
       className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 print:p-0 print:m-0 print:max-w-full"
     >
       <style type="text/css">{`
-        /* CSS Live Wallpaper Background */
         @keyframes gradientBG {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
@@ -530,7 +546,6 @@ export default function GuruDashboard({
           animation: gradientBG 15s ease infinite;
         }
 
-        /* CSS Print */
         @media print {
           @page { margin: 15mm; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -541,7 +556,7 @@ export default function GuruDashboard({
         }
       `}</style>
 
-      {/* HEADER ELEGAN DENGAN LIVE WALLPAPER */}
+      {/* HEADER */}
       <motion.header
         variants={fadeUp}
         className="relative flex flex-col lg:flex-row justify-between items-center p-6 rounded-[2rem] shadow-sm border border-emerald-100/50 gap-4 print:hidden overflow-hidden header-live-bg z-0"
@@ -599,7 +614,7 @@ export default function GuruDashboard({
         </button>
       </motion.header>
 
-      {/* BANNER INSTRUKSI ELEGAN */}
+      {/* BANNER INSTRUKSI */}
       <motion.div
         variants={fadeUp}
         className="relative overflow-hidden bg-white border border-slate-100 rounded-[1.5rem] p-5 text-sm text-slate-700 flex items-start gap-4 print:hidden shadow-sm"
@@ -613,14 +628,9 @@ export default function GuruDashboard({
               <strong className="text-slate-800 font-black tracking-wide block mb-1">
                 Eksplorasi Lembar Nilai
               </strong>
-              Mari jelajahi rekapitulasi data secara menyeluruh. Anda dapat
-              menggunakan filter <b>Kelas</b> dan <b>Mata Pelajaran</b> di bawah
-              untuk menyusun data secara spesifik{" "}
-              <b>sebelum melakukan cetak/download</b> dokumen.{" "}
-              <span className="text-emerald-600 font-bold">
-                Klik pada nama murid di tabel untuk membuka laporan nilainya
-                secara rinci.
-              </span>
+              Gunakan fitur filter di bawah untuk memilah data kelas.{" "}
+              <b>Anda bisa memilih lebih dari satu mata pelajaran sekaligus!</b>{" "}
+              Klik nama murid untuk membuka rapor rincinya.
             </p>
           )}
           {guruMode === "stats" && (
@@ -628,11 +638,8 @@ export default function GuruDashboard({
               <strong className="text-slate-800 font-black tracking-wide block mb-1">
                 Papan Peringkat Akademik
               </strong>
-              Selamat datang di pusat statistik kelas! Di sini Anda dapat
-              meninjau pencapaian
-              <span className="text-emerald-600 font-bold ml-1">
-                10 peringkat teratas atau yang membutuhkan bimbingan.
-              </span>
+              Pantau 10 peringkat teratas atau terbawah untuk evaluasi bimbingan
+              akademik.
             </p>
           )}
           {guruMode === "race" && (
@@ -640,8 +647,8 @@ export default function GuruDashboard({
               <strong className="text-slate-800 font-black tracking-wide block mb-1">
                 Arena Pantauan Live
               </strong>
-              Awasi pergerakan pengisian nilai yang sedang berlangsung dengan
-              tampilan interaktif!
+              Awasi pergerakan pengisian nilai yang sedang berlangsung secara
+              real-time.
             </p>
           )}
         </div>
@@ -652,7 +659,7 @@ export default function GuruDashboard({
         variants={fadeUp}
         className={`grid grid-cols-1 sm:grid-cols-2 ${guruMode === "table" ? "lg:grid-cols-4" : "md:grid-cols-3"} gap-4 print:hidden`}
       >
-        <div className="relative group flex items-center gap-2">
+        <div className="relative group flex items-center gap-2 z-20">
           <div className="relative flex-1">
             <Search
               className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors"
@@ -684,7 +691,7 @@ export default function GuruDashboard({
 
         {guruMode === "table" && (
           <select
-            className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer text-emerald-700"
+            className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer text-emerald-700 z-20"
             value={tableSort}
             onChange={(e) => setTableSort(e.target.value)}
           >
@@ -695,7 +702,7 @@ export default function GuruDashboard({
         )}
 
         <select
-          className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
+          className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer z-20"
           value={filters.kelas}
           onChange={(e) => setFilters({ ...filters, kelas: e.target.value })}
         >
@@ -703,7 +710,7 @@ export default function GuruDashboard({
           <option value="MIPA">Kelas MIPA</option>
           <option value="IPS">Kelas IPS</option>
           <option disabled>- - - - - -</option>
-          {[...new Set(mergedData.map((i) => i[keysMapping.keyKelas]))]
+          {[...new Set(processedData.map((i) => i[keysMapping.keyKelas]))]
             .sort()
             .map((c) => (
               <option key={c} value={c}>
@@ -712,25 +719,92 @@ export default function GuruDashboard({
             ))}
         </select>
 
-        <select
-          className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
-          value={guruMode === "table" ? filters.mapelTable : filters.mapelStats}
-          onChange={(e) =>
-            guruMode === "table"
-              ? setFilters({ ...filters, mapelTable: e.target.value })
-              : setFilters({ ...filters, mapelStats: e.target.value })
-          }
-        >
-          <option value="">
-            {guruMode === "table" ? "Semua Mapel" : "Urutkan Rata-rata"}
-          </option>
-          {/* MENGGUNAKAN DAFTAR KOLOM YANG SUDAH DINAMIS */}
-          {dynamicMergedAllMapel.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
+        {/* CUSTOM DROPDOWN MAPEL */}
+        {guruMode === "table" ? (
+          <div className="relative z-30" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="w-full flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-100 shadow-sm text-sm font-bold outline-none hover:ring-2 hover:ring-emerald-500/20 transition-all text-left"
+            >
+              <span className="truncate pr-4">
+                {selectedMapelsArray.length === 0
+                  ? "Pilih Mapel (Semua Tampil)"
+                  : `${selectedMapelsArray.length} Mapel Dipilih`}
+              </span>
+              <ChevronDown
+                size={18}
+                className={`text-slate-400 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute top-full mt-2 w-full sm:w-80 lg:w-full bg-white border border-slate-100 shadow-xl rounded-2xl overflow-hidden flex flex-col max-h-72 z-50"
+                >
+                  <div className="p-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center sticky top-0">
+                    <button
+                      onClick={selectAllMapel}
+                      className="text-xs font-black text-emerald-600 hover:text-emerald-800 uppercase px-2 py-1 bg-emerald-100/50 rounded-lg transition-colors"
+                    >
+                      Pilih Semua
+                    </button>
+                    {selectedMapelsArray.length > 0 && (
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {selectedMapelsArray.length} terpilih
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="overflow-y-auto p-2 scrollbar-hide flex flex-col gap-1">
+                    {dynamicMergedAllMapel.map((m) => {
+                      const isSelected = selectedMapelsArray.includes(m);
+                      return (
+                        <div
+                          key={m}
+                          onClick={() => toggleMapelSelection(m)}
+                          className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${isSelected ? "bg-emerald-50 text-emerald-700 font-bold" : "hover:bg-slate-50 text-slate-600"}`}
+                        >
+                          {isSelected ? (
+                            <CheckSquare
+                              size={18}
+                              className="text-emerald-500 shrink-0"
+                            />
+                          ) : (
+                            <Square
+                              size={18}
+                              className="text-slate-300 shrink-0"
+                            />
+                          )}
+                          <span className="text-sm truncate">{m}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        ) : (
+          /* SINGLE DROPDOWN UNTUK STATS & RACE */
+          <select
+            className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer z-20"
+            value={filters.mapelStats}
+            onChange={(e) =>
+              setFilters({ ...filters, mapelStats: e.target.value })
+            }
+          >
+            <option value="">Urutkan Rata-rata Total</option>
+            {dynamicMergedAllMapel.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        )}
 
         {guruMode === "stats" && (
           <div className="flex bg-white p-1.5 rounded-2xl gap-1 border border-slate-100 shadow-sm sm:col-span-2 md:col-span-3">
@@ -759,7 +833,7 @@ export default function GuruDashboard({
             initial="hidden"
             animate="visible"
             exit="hidden"
-            className="bg-white rounded-[1.5rem] sm:rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col print:shadow-none print:rounded-none print:border-none"
+            className="bg-white rounded-[1.5rem] sm:rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col print:shadow-none print:rounded-none print:border-none z-10 relative"
           >
             <div className="px-6 py-4 bg-emerald-50/50 border-b border-emerald-100 flex flex-wrap gap-6 items-center print:hidden">
               <div className="flex flex-col">
@@ -856,7 +930,6 @@ export default function GuruDashboard({
                       >
                         {idx + 1}
                       </td>
-
                       <td
                         title="Klik untuk lihat rapor murid"
                         onClick={() =>
@@ -867,7 +940,6 @@ export default function GuruDashboard({
                       >
                         {item[keysMapping.keyNama]}
                       </td>
-
                       <td
                         className={`px-2 ${!isFewCols ? "py-2.5 text-[10px]" : "py-4 text-xs md:text-sm"} text-center sticky left-[12.5rem] md:left-[18rem] bg-white group-hover:bg-emerald-50/50 transition-colors z-10 border-r border-slate-100/50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] print:static print:shadow-none print:text-black`}
                       >
@@ -906,7 +978,6 @@ export default function GuruDashboard({
           </motion.div>
         )}
 
-        {/* --- PERBAIKAN DI STATS VIEW --- */}
         {guruMode === "stats" && (
           <motion.div
             key="stats-view"
@@ -925,7 +996,6 @@ export default function GuruDashboard({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.3 }}
-                  title="Klik untuk lihat rapor murid"
                   onClick={() =>
                     onStudentClick && onStudentClick(item[keysMapping.keyNama])
                   }
