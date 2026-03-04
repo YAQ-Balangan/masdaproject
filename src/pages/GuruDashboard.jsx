@@ -195,12 +195,51 @@ export default function GuruDashboard({
   const [showRemedial, setShowRemedial] = useState(false);
   const [statsOrder, setStatsOrder] = useState("top");
 
-  const displayedCols = filters.mapelTable ? [filters.mapelTable] : allMapel;
+  // --- PRE-PROCESSING: MENGGABUNGKAN MAPEL BAHASA INDONESIA ---
+  const { mergedData, mergedAllMapel } = useMemo(() => {
+    // 1. Buang "Bahasa Indonesia (IPA)" dari daftar header tabel / dropdown
+    const newMapel = allMapel.filter(
+      (m) => m !== "Bahasa Indonesia (IPA)" && m !== "Bahasa Indonesia (MIPA)",
+    );
+
+    // 2. Gabungkan datanya ke satu kolom untuk setiap murid
+    const newData = processedData.map((item) => {
+      const newItem = { ...item };
+
+      // Ambil nilai IPA (cek kedua kemungkinan penamaan)
+      const valIpa =
+        newItem["Bahasa Indonesia (IPA)"] || newItem["Bahasa Indonesia (MIPA)"];
+
+      // Jika murid IPA punya nilai, timpa/masukkan ke properti "Bahasa Indonesia" umum
+      if (
+        valIpa !== undefined &&
+        valIpa !== null &&
+        valIpa !== "" &&
+        valIpa !== "-"
+      ) {
+        newItem["Bahasa Indonesia"] = valIpa;
+      }
+
+      // Hapus properti IPA agar data bersih saat diekspor atau dilooping
+      delete newItem["Bahasa Indonesia (IPA)"];
+      delete newItem["Bahasa Indonesia (MIPA)"];
+
+      return newItem;
+    });
+
+    return { mergedData: newData, mergedAllMapel: newMapel };
+  }, [processedData, allMapel]);
+  // ------------------------------------------------------------
+
+  // Gunakan data dan daftar mapel yang sudah digabungkan (merged)
+  const displayedCols = filters.mapelTable
+    ? [filters.mapelTable]
+    : mergedAllMapel;
   const isFewCols = displayedCols.length <= 2;
 
   // LOGIKA SORTING & FILTERING UTAMA
   const sortedData = useMemo(() => {
-    let f = processedData.filter((i) => {
+    let f = mergedData.filter((i) => {
       // 1. FILTER BLOKIR NAMA TERTENTU
       const namaMurid = String(i[keysMapping.keyNama] || "")
         .trim()
@@ -275,7 +314,7 @@ export default function GuruDashboard({
       return f;
     }
   }, [
-    processedData,
+    mergedData,
     filters,
     guruMode,
     keysMapping,
@@ -615,7 +654,7 @@ export default function GuruDashboard({
           <option value="MIPA">Kelas MIPA</option>
           <option value="IPS">Kelas IPS</option>
           <option disabled>- - - - - -</option>
-          {[...new Set(processedData.map((i) => i[keysMapping.keyKelas]))]
+          {[...new Set(mergedData.map((i) => i[keysMapping.keyKelas]))]
             .sort()
             .map((c) => (
               <option key={c} value={c}>
@@ -636,7 +675,7 @@ export default function GuruDashboard({
           <option value="">
             {guruMode === "table" ? "Semua Mapel" : "Urutkan Rata-rata"}
           </option>
-          {allMapel.map((m) => (
+          {mergedAllMapel.map((m) => (
             <option key={m} value={m}>
               {m}
             </option>
