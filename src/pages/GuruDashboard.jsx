@@ -195,46 +195,95 @@ export default function GuruDashboard({
   const [showRemedial, setShowRemedial] = useState(false);
   const [statsOrder, setStatsOrder] = useState("top");
 
-  // --- PRE-PROCESSING: MENGGABUNGKAN MAPEL BAHASA INDONESIA ---
-  const { mergedData, mergedAllMapel } = useMemo(() => {
-    // 1. Buang "Bahasa Indonesia (IPA)" dari daftar header tabel / dropdown
-    const newMapel = allMapel.filter(
-      (m) => m !== "Bahasa Indonesia (IPA)" && m !== "Bahasa Indonesia (MIPA)",
-    );
-
-    // 2. Gabungkan datanya ke satu kolom untuk setiap murid
+  // --- PRE-PROCESSING: MERGE DATA & SUSUN KOLOM MAPEL ---
+  const { mergedData, baseMergedMapel } = useMemo(() => {
+    // 1. Gabungkan datanya ke satu kolom untuk setiap murid
     const newData = processedData.map((item) => {
       const newItem = { ...item };
 
-      // Ambil nilai IPA (cek kedua kemungkinan penamaan)
-      const valIpa =
+      // LOGIKA MERGE: BAHASA INDONESIA
+      const valBindoIpa =
         newItem["Bahasa Indonesia (IPA)"] || newItem["Bahasa Indonesia (MIPA)"];
-
-      // Jika murid IPA punya nilai, timpa/masukkan ke properti "Bahasa Indonesia" umum
       if (
-        valIpa !== undefined &&
-        valIpa !== null &&
-        valIpa !== "" &&
-        valIpa !== "-"
+        valBindoIpa !== undefined &&
+        valBindoIpa !== null &&
+        valBindoIpa !== "" &&
+        valBindoIpa !== "-"
       ) {
-        newItem["Bahasa Indonesia"] = valIpa;
+        newItem["Bahasa Indonesia"] = valBindoIpa;
       }
-
-      // Hapus properti IPA agar data bersih saat diekspor atau dilooping
       delete newItem["Bahasa Indonesia (IPA)"];
       delete newItem["Bahasa Indonesia (MIPA)"];
+
+      // LOGIKA MERGE: EKONOMI
+      const valEkoIpa = newItem["Ekonomi (IPA)"] || newItem["Ekonomi (MIPA)"];
+      const valEkoIps = newItem["Ekonomi (IPS)"];
+      const valEkoMerged = valEkoIpa || valEkoIps || newItem["Ekonomi"];
+
+      if (
+        valEkoMerged !== undefined &&
+        valEkoMerged !== null &&
+        valEkoMerged !== "" &&
+        valEkoMerged !== "-"
+      ) {
+        newItem["Ekonomi"] = valEkoMerged;
+      }
+      delete newItem["Ekonomi (IPA)"];
+      delete newItem["Ekonomi (MIPA)"];
+      delete newItem["Ekonomi (IPS)"];
 
       return newItem;
     });
 
-    return { mergedData: newData, mergedAllMapel: newMapel };
+    // 2. Susun daftar kolom dasar (gabungan)
+    const newMapel = [];
+    allMapel.forEach((m) => {
+      // Daftarkan B.Indo versi merge
+      if (m === "Bahasa Indonesia (IPA)" || m === "Bahasa Indonesia (MIPA)") {
+        if (!newMapel.includes("Bahasa Indonesia"))
+          newMapel.push("Bahasa Indonesia");
+        return;
+      }
+      // Daftarkan Ekonomi versi merge
+      if (
+        m === "Ekonomi (IPA)" ||
+        m === "Ekonomi (MIPA)" ||
+        m === "Ekonomi (IPS)"
+      ) {
+        if (!newMapel.includes("Ekonomi")) newMapel.push("Ekonomi");
+        return;
+      }
+      // Sisanya biarkan lewat
+      if (!newMapel.includes(m)) newMapel.push(m);
+    });
+
+    return { mergedData: newData, baseMergedMapel: newMapel };
   }, [processedData, allMapel]);
+
+  // --- FILTERING KOLOM DINAMIS (BERDASARKAN FILTER KELAS) ---
+  const dynamicMergedAllMapel = useMemo(() => {
+    if (!filters.kelas) return baseMergedMapel; // Jika "Semua Kelas", tampilkan semua kolom
+
+    const filterStr = String(filters.kelas).toUpperCase();
+    const isMipaView = filterStr.includes("MIPA") || filterStr.includes("IPA");
+    const isIpsView = filterStr.includes("IPS");
+
+    return baseMergedMapel.filter((m) => {
+      const mUpper = m.toUpperCase();
+      // Jika memfilter kelas MIPA, sembunyikan kolom (IPS)
+      if (isMipaView && mUpper.includes("(IPS)")) return false;
+      // Jika memfilter kelas IPS, sembunyikan kolom (MIPA/IPA)
+      if (isIpsView && (mUpper.includes("(MIPA)") || mUpper.includes("(IPA)")))
+        return false;
+      return true;
+    });
+  }, [baseMergedMapel, filters.kelas]);
   // ------------------------------------------------------------
 
-  // Gunakan data dan daftar mapel yang sudah digabungkan (merged)
+  // Gunakan daftar mapel yang sudah dinamis menyesuaikan filter kelas
   const displayedCols = filters.mapelTable
     ? [filters.mapelTable]
-    : mergedAllMapel;
+    : dynamicMergedAllMapel;
   const isFewCols = displayedCols.length <= 2;
 
   // LOGIKA SORTING & FILTERING UTAMA
@@ -675,7 +724,8 @@ export default function GuruDashboard({
           <option value="">
             {guruMode === "table" ? "Semua Mapel" : "Urutkan Rata-rata"}
           </option>
-          {mergedAllMapel.map((m) => (
+          {/* MENGGUNAKAN DAFTAR KOLOM YANG SUDAH DINAMIS */}
+          {dynamicMergedAllMapel.map((m) => (
             <option key={m} value={m}>
               {m}
             </option>
