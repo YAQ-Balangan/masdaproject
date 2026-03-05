@@ -29,21 +29,6 @@ export default function Selection({ navigateTo }) {
       // Tambahkan kelas khusus untuk animasi background keseluruhan
       className="flex flex-col items-center justify-center min-h-screen p-6 relative selection-live-bg overflow-hidden z-0"
     >
-      {/* CSS Khusus untuk Live Wallpaper Background */}
-      <style>{`
-        @keyframes gradientBG {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        .selection-live-bg {
-          /* Gradasi warna yang sangat lembut: campuran emerald, amber, dan teal muda */
-          background: linear-gradient(-45deg, #f0fdf4, #ecfdf5, #fffbeb, #f0fdfa);
-          background-size: 400% 400%;
-          animation: gradientBG 15s ease infinite;
-        }
-      `}</style>
-
       {/* Elemen Latar Belakang Melayang (Floating Blobs) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
         <motion.div
