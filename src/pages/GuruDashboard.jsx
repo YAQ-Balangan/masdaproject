@@ -880,13 +880,13 @@ export default function GuruDashboard({
                   onClick={() => handleExport("xls")}
                   className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold uppercase rounded-xl transition-colors shadow-sm"
                 >
-                  <Download size={14} /> XLSX
+                  <Download size={14} /> EXCEL
                 </button>
                 <button
                   onClick={() => handleExport("doc")}
                   className="flex items-center gap-1.5 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white text-[10px] font-bold uppercase rounded-xl transition-colors shadow-sm"
                 >
-                  <Download size={14} /> DOCX
+                  <Download size={14} /> WORD
                 </button>
               </div>
             </div>
