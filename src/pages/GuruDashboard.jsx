@@ -36,6 +36,13 @@ import { saveAs } from "file-saver";
 
 const KKM_SCORE = 75;
 
+// Helper untuk menampilkan data "apa adanya" dari backend.
+// Ini mencegah angka 0 menjadi "-" karena sifat truthy/falsy javascript.
+const formatDisplayValue = (val) => {
+  if (val === undefined || val === null || val === "") return "-";
+  return val;
+};
+
 const RollingValue = memo(({ value, className, isKkmFailed }) => (
   <div
     className={`relative flex flex-col items-center justify-center overflow-hidden h-[1.2em] ${className} ${
@@ -129,11 +136,12 @@ const RaceItem = memo(
                 />
               )}
 
+              {/* Tampilkan rawVal agar format desimal atau 00.0 dari backend tidak terpotong parseInt/parseFloat */}
               {isFinished && (
                 <span
                   className={`absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-black text-white px-1 rounded border z-10 ${isKkmFailed ? "bg-red-600 border-red-800" : "bg-slate-900 border-slate-700"}`}
                 >
-                  {nilai}
+                  {rawVal}
                 </span>
               )}
             </div>
@@ -422,7 +430,7 @@ export default function GuruDashboard({
         idx + 1,
         item[keysMapping.keyNama],
         item[keysMapping.keyKelas],
-        ...displayedCols.map((m) => item[m] || "-"),
+        ...displayedCols.map((m) => formatDisplayValue(item[m])),
       ]);
 
       const worksheet = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
@@ -461,7 +469,7 @@ export default function GuruDashboard({
             (idx + 1).toString(),
             item[keysMapping.keyNama] || "",
             item[keysMapping.keyKelas] || "",
-            ...displayedCols.map((m) => (item[m] || "-").toString()),
+            ...displayedCols.map((m) => String(formatDisplayValue(item[m]))),
           ];
           return new TableRow({
             children: rowData.map(
@@ -586,7 +594,7 @@ export default function GuruDashboard({
           </div>
           <div>
             <h2 className="text-xl font-black text-slate-800 drop-shadow-sm">
-              Monitoring Nilai (Real-Time)
+              Monitoring Nilai (Nyata)
             </h2>
             <p
               className={`text-[10px] font-black uppercase tracking-widest ${isSyncing ? "text-amber-600 animate-pulse" : "text-emerald-700"}`}
@@ -959,7 +967,7 @@ export default function GuruDashboard({
                             className={`px-2 md:px-3 ${!isFewCols ? "py-2.5 text-xs" : "py-4 text-sm md:text-base"} text-center font-bold print:text-black ${isKkmFailed ? "bg-red-50/30 print:bg-transparent print:text-red-700" : ""}`}
                           >
                             <RollingValue
-                              value={item[m] || "-"}
+                              value={formatDisplayValue(item[m])}
                               isKkmFailed={isKkmFailed}
                               className={
                                 isFewCols
